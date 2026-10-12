@@ -53,6 +53,7 @@ flowchart TD
     classDef store fill:#052e16,stroke:#22c55e,stroke-width:2px,color:#f8fafc;
     classDef ledger fill:#1e293b,stroke:#475569,stroke-width:2px,color:#f8fafc;
     classDef alert fill:#3b0764,stroke:#d8b4fe,stroke-width:2px,color:#f8fafc;
+    classDef db fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#f8fafc;
 
     %% 1. Daily Cycle Initialization
     subgraph S1["1. Day Initialization"]
@@ -62,29 +63,38 @@ flowchart TD
     end
 
     %% 2. Phase 1: Store Open & Dialogue
-    subgraph S2["2. Phase 1: AI-to-AI Customer Interaction"]
-        PERSONAS["Load Personas<br/>SAMPLE_PERSONAS"]:::market
-        CUST["CustomerAgent<br/>Step up & greet"]:::agent
-        SALES["SalesAgent<br/>Pitch & answer"]:::agent
-        DONE{"Utterance Contains<br/>[DONE] or Max Turns?"}:::market
+    subgraph S2["2. Phase 1: AI-to-AI Customer Traffic"]
+        PERSONAS["Iterate Customers<br/>SAMPLE_PERSONAS[:3]"]:::market
+        RESET["SalesAgent.reset()<br/>CustomerAgent(persona)"]:::agent
+        CUST["Customer Utterance<br/>(Greets / Inquires / Orders)"]:::market
+        SALES["SalesAgent.chat()<br/>(Inspects stock, answers, charges)"]:::agent
+        SALES_TOOLS[("SQLite Tools<br/>execute_sale / record_tip<br/>get_inventory_status")]:::db
+        DONE{"Exit Condition?<br/>[DONE] detected OR max_exchanges"}:::market
+        MORE_CUST{"More Customers in Queue?"}:::market
 
-        PERSONAS --> CUST
-        CUST <-->|Multi-turn chat| SALES
-        CUST --> DONE
+        PERSONAS --> RESET
+        RESET --> CUST
+        CUST --> SALES
+        SALES -.->|Tool Calls| SALES_TOOLS
+        SALES --> DONE
+        DONE -->|No: Next Turn| CUST
+        DONE -->|Yes: Customer Departs| MORE_CUST
+        MORE_CUST -->|Yes| RESET
     end
 
     INIT_CASH -->|Phase 1 Start| PERSONAS
-    DONE -->|No: Next Exchange| CUST
 
-    %% 3. Phase 2: Closing & Inventory Audit
+    %% 3. Phase 2: Closing & Procurement Audit
     subgraph S3["3. Phase 2: Closing & Procurement Audit"]
-        AUDIT["Audit & Restock Task<br/>Restock &lt; 10 units up to 20<br/>Hold \$10 cash cushion"]:::alert
-        PROCURE["ProcurementAgent<br/>procurement_agent.run()"]:::agent
+        AUDIT["Audit & Restock Task<br/>Restock &lt; 10 units up to 20<br/>Hold $10 cash cushion"]:::alert
+        PROCURE["ProcurementAgent.run()"]:::agent
+        PROC_TOOLS[("SQLite Tools<br/>execute_restock<br/>get_treasury_balance")]:::db
 
         AUDIT --> PROCURE
+        PROCURE -.->|Tool Calls| PROC_TOOLS
     end
 
-    DONE -->|Yes: Customer Leaves / Loop Next| AUDIT
+    MORE_CUST -->|No: Doors Closed| AUDIT
 
     %% 4. End-of-Day Financial Report
     subgraph S4["4. Financial & Inventory Audit"]

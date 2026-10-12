@@ -29,13 +29,13 @@
     <section class="mb-8">
       <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">System Overview</h2>
       <p class="text-slate-300 text-sm leading-relaxed mb-4">
-        A lightweight security orchestration pipeline running locally on Linux. It monitors SSH authentication telemetry in real time, automates threat intelligence lookups, synthesizes context via Gemini 3.8, and blocks active attackers at the firewall level without human delay.
+        A lightweight security orchestration pipeline running locally on Linux that monitors SSH telemetry and simulated web application logs in real time. It automates threat intelligence enrichment, synthesizes incident context using Gemini 3.8, and autonomously isolates attackers at the host firewall level.
       </p>
 
       <ul class="space-y-2 text-sm text-slate-300 list-disc list-inside">
-        <li><strong class="text-white">Log Ingestion:</strong> Continuous tailing and regex parsing of authentication streams (`/var/log/secure` or `auth.log`).</li>
+        <li><strong class="text-white">Log Ingestion:</strong> Continuous tailing and regex parsing of authentication streams (FastAPI <code>logs/alerts.log</code> and systemd <code>journalctl -t sshd</code>).</li>
         <li><strong class="text-white">Deterministic Enrichment:</strong> Queries AbuseIPDB API for baseline confidence scores and historical reporting volume.</li>
-        <li><strong class="text-white">AI Context &amp; Triage (Gemini 3.8):</strong> Evaluates brute-force velocity, classifies attack patterns, and generates structured incident briefs.</li>
+        <li><strong class="text-white">AI Context &amp; Triage (Gemini 3.8):</strong> Correlates threat telemetry, classifies attack patterns, and generates structured Tier 1 incident briefs.</li>
         <li><strong class="text-white">Automated Mitigation:</strong> Dynamically injects timed DROP rules into Linux `iptables` and dispatches alerts via webhook.</li>
       </ul>
     </section>
