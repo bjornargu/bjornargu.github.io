@@ -3,15 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Page</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Engineering Portfolio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1 id="heading">It works!</h1>
-  <p>This is placeholder text just to confirm GitHub Pages is serving this site correctly.</p>
-  <button id="testButton">Click me</button>
-  <p id="output"></p>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+  <div class="max-w-4xl mx-auto px-6 py-14">
+    <!-- Header -->
+    <header class="mb-14">
+      <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Systems & Security Engineering</h1>
+      <p class="text-slate-400 text-base max-w-2xl leading-relaxed">
+        Implementations focused on defensive automation, Linux telemetry, API orchestration, and domain simulations.
+      </p>
+    </header>
 
-  <script src="script.js"></script>
+    <!-- Dynamic Projects Section -->
+    <section>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400">Featured Projects</h2>
+        <span class="text-xs text-slate-500 font-mono">Updated Oct 2026</span>
+      </div>
+      <div id="project-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Rendered via assets/js/projects.js -->
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-20 pt-6 border-t border-slate-800 text-xs text-slate-500 flex justify-between">
+      <span>Self-hosted on GitHub Pages</span>
+      <span>Fedora Linux / GitKraken workflow</span>
+    </footer>
+  </div>
+
+  <script src="assets/js/projects.js"></script>
 </body>
 </html>

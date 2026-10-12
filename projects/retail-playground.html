@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Summary | Retail Playground & Simulation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Mermaid.js for diagrams -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <!-- Navigation -->
+    <a href="../index.html" class="text-sky-400 hover:text-sky-300 text-sm font-medium mb-8 inline-block">&larr; Back to Projects</a>
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 pb-6 mb-8">
+      <div class="flex items-center justify-between gap-4 mb-2">
+        <h1 class="text-2xl font-bold text-white">Retail Playground &amp; Simulation</h1>
+        <span class="text-xs font-mono px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">In Development</span>
+      </div>
+      <p class="text-slate-400 text-sm">Autonomous multi-agent retail simulation featuring multi-turn sales dialogue and inventory restock audits.</p>
+    </header>
+
+    <!-- Overview -->
+    <section class="mb-8">
+      <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">System Overview</h2>
+      <p class="text-slate-300 text-sm leading-relaxed mb-4">
+        A simulated retail business cycle executed by autonomous LLM agents. The runtime orchestrates morning cash verification, multi-turn AI-to-AI customer negotiation, end-of-day threshold-based procurement audits, and ledger reconciliations.
+      </p>
+
+      <ul class="space-y-2 text-sm text-slate-300 list-disc list-inside">
+        <li><strong class="text-white">Day Lifecycle:</strong> Sequential business day model (`run_business_day`) controlling morning briefing, store operations, and closing audit.</li>
+        <li><strong class="text-white">Multi-Turn Interaction:</strong> Direct interaction between `CustomerAgent` and `SalesAgent` with an autonomous exit condition (`[DONE]`) or bounded turn cap.</li>
+        <li><strong class="text-white">Autonomous Procurement:</strong> Goal-driven `ProcurementAgent` tasked with inventory reordering thresholds (&lt; 10 units up to 20) while protecting a cash reserve cushion.</li>
+        <li><strong class="text-white">Ledger &amp; State Validation:</strong> Verification of treasury variance, final SKU counts, and recent ledger activity via core state tools.</li>
+      </ul>
+    </section>
+
+    <!-- Pipeline Architecture -->
+    <section class="mb-8">
+      <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Simulation Architecture</h2>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 overflow-x-auto">
+        <pre class="mermaid text-center">
+flowchart TD
+    %% Styling
+    classDef loop fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef agent fill:#312e81,stroke:#c084fc,stroke-width:2px,color:#f8fafc;
+    classDef market fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#f8fafc;
+    classDef store fill:#052e16,stroke:#22c55e,stroke-width:2px,color:#f8fafc;
+    classDef ledger fill:#1e293b,stroke:#475569,stroke-width:2px,color:#f8fafc;
+    classDef alert fill:#3b0764,stroke:#d8b4fe,stroke-width:2px,color:#f8fafc;
+
+    %% 1. Daily Cycle Initialization
+    subgraph S1["1. Day Initialization"]
+        START["run_business_day()"]:::loop
+        INIT_CASH["Query Starting Treasury<br/>get_treasury_balance()"]:::ledger
+        START --> INIT_CASH
+    end
+
+    %% 2. Phase 1: Store Open & Dialogue
+    subgraph S2["2. Phase 1: AI-to-AI Customer Interaction"]
+        PERSONAS["Load Personas<br/>SAMPLE_PERSONAS"]:::market
+        CUST["CustomerAgent<br/>Step up & greet"]:::agent
+        SALES["SalesAgent<br/>Pitch & answer"]:::agent
+        DONE{"Utterance Contains<br/>[DONE] or Max Turns?"}:::market
+
+        PERSONAS --> CUST
+        CUST <-->|Multi-turn chat| SALES
+        CUST --> DONE
+    end
+
+    INIT_CASH -->|Phase 1 Start| PERSONAS
+    DONE -->|No: Next Exchange| CUST
+
+    %% 3. Phase 2: Closing & Inventory Audit
+    subgraph S3["3. Phase 2: Closing & Procurement Audit"]
+        AUDIT["Audit & Restock Task<br/>Restock &lt; 10 units up to 20<br/>Hold \$10 cash cushion"]:::alert
+        PROCURE["ProcurementAgent<br/>procurement_agent.run()"]:::agent
+
+        AUDIT --> PROCURE
+    end
+
+    DONE -->|Yes: Customer Leaves / Loop Next| AUDIT
+
+    %% 4. End-of-Day Financial Report
+    subgraph S4["4. Financial & Inventory Audit"]
+        EOD_CASH["Closing Treasury & P&L<br/>get_treasury_balance()"]:::ledger
+        INV["Stock Levels Verification<br/>get_inventory_status()"]:::store
+        TX["Transaction History Audit<br/>get_recent_transactions(5)"]:::ledger
+
+        EOD_CASH --> INV
+        INV --> TX
+    end
+
+    PROCURE -->|Audit Complete| EOD_CASH
+        </pre>
+      </div>
+    </section>
+
+    <!-- Core Stack -->
+    <section class="mb-8">
+      <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Stack &amp; Components</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">Python 3</div>
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">Multi-Agent Loops</div>
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">SQLite Ledger</div>
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">Prompt Personas</div>
+      </div>
+    </section>
+
+    <!-- Footer Links -->
+    <div class="pt-6 border-t border-slate-800 flex gap-4 text-sm font-medium">
+      <a href="https://github.com/bjornargu/retail_playground" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300">View Repository &rarr;</a>
+    </div>
+  </main>
+</body>
+</html>

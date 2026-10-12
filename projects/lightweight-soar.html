@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Summary | Lightweight SOAR Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Mermaid.js for diagrams -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+  <main class="max-w-3xl mx-auto px-6 py-12">
+    <!-- Navigation -->
+    <a href="../index.html" class="text-sky-400 hover:text-sky-300 text-sm font-medium mb-8 inline-block">&larr; Back to Projects</a>
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 pb-6 mb-8">
+      <div class="flex items-center justify-between gap-4 mb-2">
+        <h1 class="text-2xl font-bold text-white">Lightweight SOAR Engine</h1>
+        <span class="text-xs font-mono px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+      </div>
+      <p class="text-slate-400 text-sm">Automated host-level intrusion detection, live intelligence enrichment, and defensive response.</p>
+    </header>
+
+    <!-- Overview -->
+    <section class="mb-8">
+      <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">System Overview</h2>
+      <p class="text-slate-300 text-sm leading-relaxed mb-4">
+        A lightweight security orchestration pipeline running locally on Linux. It monitors SSH authentication telemetry in real time, automates threat intelligence lookups, synthesizes context via Gemini 3.8, and blocks active attackers at the firewall level without human delay.
+      </p>
+
+      <ul class="space-y-2 text-sm text-slate-300 list-disc list-inside">
+        <li><strong class="text-white">Log Ingestion:</strong> Continuous tailing and regex parsing of authentication streams (`/var/log/secure` or `auth.log`).</li>
+        <li><strong class="text-white">Deterministic Enrichment:</strong> Queries AbuseIPDB API for baseline confidence scores and historical reporting volume.</li>
+        <li><strong class="text-white">AI Context &amp; Triage (Gemini 3.8):</strong> Evaluates brute-force velocity, classifies attack patterns, and generates structured incident briefs.</li>
+        <li><strong class="text-white">Automated Mitigation:</strong> Dynamically injects timed DROP rules into Linux `iptables` and dispatches alerts via webhook.</li>
+      </ul>
+    </section>
+
+    <!-- Pipeline Architecture -->
+    <section class="mb-8">
+      <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Pipeline Flow</h2>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 overflow-x-auto">
+        <pre class="mermaid text-center">
+flowchart TD
+    %% Styling
+    classDef source fill:#1e293b,stroke:#475569,stroke-width:2px,color:#f8fafc;
+    classDef engine fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef enrich fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#f8fafc;
+    classDef ai fill:#312e81,stroke:#c084fc,stroke-width:2px,color:#f8fafc;
+    classDef block fill:#450a0a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
+    classDef recover fill:#052e16,stroke:#22c55e,stroke-width:2px,color:#f8fafc;
+    classDef alert fill:#3b0764,stroke:#d8b4fe,stroke-width:2px,color:#f8fafc;
+
+    %% Ingestion Sources
+    subgraph Ingestion["1. Telemetry Ingestion"]
+        APP["FastAPI Application<br/>logs/alerts.log"]:::source
+        SSH["System SSH Daemon<br/>journalctl -t sshd"]:::source
+    end
+
+    %% Core Engine & Parsing
+    subgraph Engine["2. Detection & Filtering"]
+        SOAR["SOAR Engine Worker<br/>soar-engine.py"]:::engine
+        FILTER{"Private IP Check<br/>RFC 1918 / Loopback?"}:::engine
+    end
+
+    APP -->|Tail log stream| SOAR
+    SSH -->|Stream events| SOAR
+    SOAR -->|Regex extract IP| FILTER
+
+    FILTER -->|Yes: Internal IP| SKIP["Drop & Skip Check"]:::source
+    FILTER -->|No: External IP| API
+
+    %% Threat Intelligence & AI Triage
+    subgraph Analysis["3. Threat Intelligence & AI Triage"]
+        API["AbuseIPDB API v2<br/>Reputation & Score"]:::enrich
+        SCORE{"Abuse Score >= 50%?"}:::enrich
+        GEMINI["Google Gemini API<br/>gemini-3.8-flash<br/>Tier 1 SOC Analyst Triage"]:::ai
+    end
+
+    API --> SCORE
+    SCORE -->|No: Low Threat| LOG["Log & Monitor"]:::source
+    SCORE -->|Yes: High Threat| GEMINI
+
+    %% Automated Remediation & Alerts
+    subgraph Response["4. Automated Remediation & Recovery"]
+        IPTABLES["Execute Host Isolation<br/>iptables -A INPUT -s IP -j DROP"]:::block
+        TIMER["Async Recovery Timer<br/>threading.Timer (60s)"]:::engine
+        CLEANUP["Automated Rule Cleanup<br/>iptables -D INPUT -s IP -j DROP"]:::recover
+        DISCORD_BLOCK["Discord Webhook<br/>🚨 Containment Alert + AI Brief"]:::alert
+        DISCORD_UNBLOCK["Discord Webhook<br/>🟢 Recovery Alert"]:::alert
+    end
+
+    GEMINI --> IPTABLES
+    IPTABLES --> DISCORD_BLOCK
+    IPTABLES --> TIMER
+    TIMER -->|After 60s expiration| CLEANUP
+    CLEANUP --> DISCORD_UNBLOCK
+        </pre>
+      </div>
+    </section>
+
+    <!-- Core Stack -->
+    <section class="mb-8">
+      <h2 class="text-sm font-mono uppercase tracking-wider text-slate-400 mb-3">Stack &amp; Components</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">Python 3</div>
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">Gemini 3.8</div>
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">Linux iptables</div>
+        <div class="p-3 rounded border border-slate-800 bg-slate-900/40 text-center">FastAPI</div>
+      </div>
+    </section>
+
+    <!-- Footer Links -->
+    <div class="pt-6 border-t border-slate-800 flex gap-4 text-sm font-medium">
+      <a href="https://github.com/bjornargu/lightweight-soar" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300">View Repository &rarr;</a>
+    </div>
+  </main>
+</body>
+</html>
