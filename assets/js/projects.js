@@ -22,9 +22,9 @@ const projects = [
   {
     id: "sio-menu",
     title: "SiØ Campus Menu Chrome Extension",
-    status: "Completed",
+    status: "Active",
     statusColor: "emerald",
-    summary: "Lightweight browser extension that scrapes and parses university diner menus, providing campus selection, localization, daily meal highlights, and persistent local storage.",
+    summary: "Lightweight browser extension that scrapes and parses university diner menus, providing campus selection, localization, daily meal highlights, and persistent local storage. Mostly made out of curiosity for browser extensions and for fun.",
     tags: ["JavaScript", "Chrome Extensions", "DOMParser", "Async/Await", "Local Storage"],
     detailPage: "projects/sio-menu.html",
     repoUrl: "https://github.com/bjornargu/sio_menu" 
