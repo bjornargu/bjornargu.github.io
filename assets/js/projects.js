@@ -1,5 +1,15 @@
 const projects = [
 {
+    id: "retail-playground",
+    title: "Retail Playground & Simulation",
+    status: "In Development",
+    statusColor: "amber",
+    summary: "Autonomous multi-agent retail simulation featuring multi-turn customer-to-clerk dialogues, threshold-based procurement audits, and end-of-day ledger reconciliation.",
+    tags: ["Python", "Multi-Agent", "Autonomous Systems", "SQLite", "Simulation"],
+    detailPage: "projects/retail-playground.html",
+    repoUrl: "https://github.com/bjornargu/retail_playground"
+  },
+  {
     id: "soar-engine",
     title: "Lightweight SOAR Engine",
     status: "Active",
@@ -9,15 +19,15 @@ const projects = [
     detailPage: "projects/lightweight-soar.html",
     repoUrl: "https://github.com/bjornargu/lightweight-soar" 
   },
-{
-    id: "retail-playground",
-    title: "Retail Playground & Simulation",
-    status: "In Development",
-    statusColor: "amber",
-    summary: "Autonomous multi-agent retail simulation featuring multi-turn customer-to-clerk dialogues, threshold-based procurement audits, and end-of-day ledger reconciliation.",
-    tags: ["Python", "Multi-Agent", "Autonomous Systems", "SQLite", "Simulation"],
-    detailPage: "projects/retail-playground.html",
-    repoUrl: "https://github.com/bjornargu/retail_playground"
+  {
+    id: "sio-menu",
+    title: "SiØ Campus Menu Chrome Extension",
+    status: "Completed",
+    statusColor: "emerald",
+    summary: "Lightweight browser extension that scrapes and parses university diner menus, providing campus selection, localization, daily meal highlights, and persistent local storage.",
+    tags: ["JavaScript", "Chrome Extensions", "DOMParser", "Async/Await", "Local Storage"],
+    detailPage: "projects/sio-menu.html",
+    repoUrl: "https://github.com/bjornargu/sio_menu" 
   }
 ];
 
