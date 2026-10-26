@@ -57,13 +57,13 @@ flowchart TD
 
     %% Ingestion Sources
     subgraph Ingestion["1. Telemetry Ingestion"]
-        APP["FastAPI Application<br/>logs/alerts.log"]:::source
-        SSH["System SSH Daemon<br/>journalctl -t sshd"]:::source
+        APP["FastAPI Application<br/><code>logs/alerts.log</code>"]:::source
+        SSH["System SSH Daemon<br/><code>journalctl -t sshd</code>"]:::source
     end
 
     %% Core Engine & Parsing
     subgraph Engine["2. Detection & Filtering"]
-        SOAR["SOAR Engine Worker<br/>soar-engine.py"]:::engine
+        SOAR["SOAR Engine Worker<br/><code>soar-engine.py</code>"]:::engine
         FILTER{"Private IP Check<br/>RFC 1918 / Loopback?"}:::engine
     end
 
@@ -78,24 +78,24 @@ flowchart TD
     subgraph Analysis["3. Threat Intelligence & AI Triage"]
         API["AbuseIPDB API v2<br/>Reputation & Score"]:::enrich
         SCORE{"Abuse Score >= 50%?"}:::enrich
-        GEMINI["Google Gemini API<br/>gemini-3.8-flash<br/>Tier 1 SOC Analyst Triage"]:::ai
+        GEMINI["Google Gemini API<br/><code>gemini-3.8-flash</code><br/>Tier 1 SOC Analyst Triage"]:::ai
     end
 
     API --> SCORE
     SCORE -->|No: Low Threat| LOG["Log & Monitor"]:::source
-    SCORE -->|Yes: High Threat| GEMINI
+    SCORE -->|Yes: High Threat| IPTABLES
 
     %% Automated Remediation & Alerts
     subgraph Response["4. Automated Remediation & Recovery"]
-        IPTABLES["Execute Host Isolation<br/>iptables -A INPUT -s IP -j DROP"]:::block
-        TIMER["Async Recovery Timer<br/>threading.Timer (60s)"]:::engine
-        CLEANUP["Automated Rule Cleanup<br/>iptables -D INPUT -s IP -j DROP"]:::recover
+        IPTABLES["Execute Host Isolation<br/><code>iptables -A INPUT -s IP -j DROP</code>"]:::block
+        TIMER["Async Recovery Timer<br/><code>threading.Timer (60s)</code>"]:::engine
+        CLEANUP["Automated Rule Cleanup<br/><code>iptables -D INPUT -s IP -j DROP</code>"]:::recover
         DISCORD_BLOCK["Discord Webhook<br/>🚨 Containment Alert + AI Brief"]:::alert
         DISCORD_UNBLOCK["Discord Webhook<br/>🟢 Recovery Alert"]:::alert
     end
 
-    GEMINI --> IPTABLES
-    IPTABLES --> DISCORD_BLOCK
+    IPTABLES --> GEMINI
+    GEMINI --> DISCORD_BLOCK
     IPTABLES --> TIMER
     TIMER -->|After 60s expiration| CLEANUP
     CLEANUP --> DISCORD_UNBLOCK
