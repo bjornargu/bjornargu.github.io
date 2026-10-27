@@ -46,68 +46,86 @@
       <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 overflow-x-auto">
         <pre class="mermaid text-center">
 flowchart TD
-    %% Styling
-    classDef source fill:#1e293b,stroke:#475569,stroke-width:2px,color:#f8fafc;
-    classDef engine fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
-    classDef enrich fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#f8fafc;
-    classDef ai fill:#312e81,stroke:#c084fc,stroke-width:2px,color:#f8fafc;
+    %% Styling & Theme Palette
+    classDef source fill:#1e293b,stroke:#64748b,stroke-width:1.5px,color:#f8fafc;
+    classDef engine fill:#0f172a,stroke:#38bdf8,stroke-width:1.5px,color:#f8fafc;
+    classDef enrich fill:#1e1b4b,stroke:#818cf8,stroke-width:1.5px,color:#f8fafc;
     classDef block fill:#450a0a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
-    classDef recover fill:#052e16,stroke:#22c55e,stroke-width:2px,color:#f8fafc;
-    classDef alert fill:#3b0764,stroke:#d8b4fe,stroke-width:2px,color:#f8fafc;
+    classDef ai fill:#2e1065,stroke:#c084fc,stroke-width:1.5px,color:#f8fafc;
+    classDef alert fill:#3b0764,stroke:#d8b4fe,stroke-width:1.5px,color:#f8fafc;
+    classDef recover fill:#052e16,stroke:#22c55e,stroke-width:1.5px,color:#f8fafc;
+    classDef muted fill:#0f172a,stroke:#475569,stroke-width:1px,color:#94a3b8;
 
-    %% 1. Ingestion Sources
+    %% 1. Telemetry Ingestion
     subgraph Ingestion["1. Telemetry Ingestion"]
-        direction TB
         APP["FastAPI Application<br/><code>logs/alerts.log</code>"]:::source
         SSH["System SSH Daemon<br/><code>journalctl -t sshd</code>"]:::source
-        APP ~~~ SSH
     end
 
-    APP -->|Tail log stream| SOAR
-    SSH -->|Stream events| SOAR
-
-    %% 2. Core Engine & Parsing
-    subgraph Engine["2. Detection & Filtering"]
-        direction TB
-        SOAR["SOAR Engine Worker<br/><code>soar-engine.py</code>"]:::engine
-        FILTER{"Private IP Check<br/>RFC 1918 / Loopback?"}:::engine
-        SKIP["Drop & Skip Check"]:::source
-
-        SOAR -->|Regex extract IP| FILTER
-        FILTER -->|Yes: Internal IP| SKIP
+    %% 2. Filtering & Local Rate Limiting
+    subgraph Filtering["2. Filtering & Local Rate Limiting"]
+        SOAR["SOAR Ingestion Worker<br/><code>Regex IP Extraction</code>"]:::engine
+        FILTER{"Private IP?<br/>RFC 1918 / Loopback"}:::engine
+        SKIP(["Drop & Ignore Internal IP"]):::muted
+        WINDOW["In-Memory Sliding Window<br/><code>defaultdict(list) - 30s window</code>"]:::engine
+        BURST{"Local Burst?<br/>Attempts >= 5 in 30s"}:::engine
     end
 
-    FILTER -->|No: External IP| API
-
-    %% 3. Threat Intelligence & Scoring
-    subgraph Analysis["3. Threat Intelligence & Scoring"]
-        direction TB
-        API["AbuseIPDB API v2<br/>Reputation & Score"]:::enrich
-        SCORE{"Abuse Score >= 50%?"}:::enrich
-        LOG["Log & Monitor"]:::source
-
-        API --> SCORE
-        SCORE -->|No: Low Threat| LOG
+    %% 3. Threat Intelligence Enrichment & Cache
+    subgraph Enrichment["3. Threat Intelligence Enrichment & Cache"]
+        CACHE{"Reputation Cache?<br/>1-Hour TTL Match"}:::engine
+        API["AbuseIPDB API v2<br/><code>api.abuseipdb.com</code>"]:::enrich
+        STATUS{"API Reachable?"}:::enrich
+        SCORE{"Threat Score<br/>Score >= 50%?"}:::enrich
+        FAIL_CLOSED{"Fail-Closed?<br/>Local Count >= 5"}:::enrich
+        LOG_WARN(["Log Warning & Monitor"]):::muted
+        LOG_MONITOR(["Log & Monitor"]):::muted
     end
 
-    SCORE -->|Yes: High Threat| IPTABLES
-
-    %% 4. Automated Remediation & Alerts
-    subgraph Response["4. Automated Remediation & Recovery"]
-        direction TB
+    %% 4. Automated Containment & Recovery
+    subgraph Containment["4. Automated Containment & Recovery"]
         IPTABLES["Execute Host Isolation<br/><code>iptables -A INPUT -s IP -j DROP</code>"]:::block
-        GEMINI["Google Gemini API<br/><code>gemini-3.8-flash</code><br/>Tier 1 SOC Analyst Triage"]:::ai
-        DISCORD_BLOCK["Discord Webhook<br/>🚨 Containment Alert + AI Brief"]:::alert
+        ALERT_BURST(["Discord Webhook<br/>🚨 Local Brute-Force Alert"]):::alert
+        GEMINI["Google Gemini API<br/><code>gemini-3.8-flash - AI Triage</code>"]:::ai
+        ALERT_INTEL(["Discord Webhook<br/>🚨 Threat Intel Alert + AI Brief"]):::alert
         TIMER["Async Recovery Timer<br/><code>threading.Timer (60s)</code>"]:::engine
         CLEANUP["Automated Rule Cleanup<br/><code>iptables -D INPUT -s IP -j DROP</code>"]:::recover
-        DISCORD_UNBLOCK["Discord Webhook<br/>🟢 Recovery Alert"]:::alert
-
-        IPTABLES --> GEMINI
-        GEMINI --> DISCORD_BLOCK
-        DISCORD_BLOCK --> TIMER
-        TIMER -->|After 60s expiration| CLEANUP
-        CLEANUP --> DISCORD_UNBLOCK
+        ALERT_RECOVER(["Discord Webhook<br/>🟢 Recovery Alert"]):::recover
     end
+
+    %% Pipeline Connections
+    APP -->|Tail log| SOAR
+    SSH -->|Stream events| SOAR
+    SOAR --> FILTER
+
+    FILTER -->|Yes| SKIP
+    FILTER -->|No: External| WINDOW
+    WINDOW -->|Record timestamp| BURST
+
+    BURST -->|No: Normal Rate| CACHE
+    BURST -->|Yes: >=5 Attempts| IPTABLES
+
+    CACHE -->|Hit: Score >=50%| IPTABLES
+    CACHE -->|Hit: Score <50%| LOG_MONITOR
+    CACHE -->|Miss| API
+
+    API --> STATUS
+    STATUS -->|Yes: 200 OK| SCORE
+    STATUS -->|No: Degraded| FAIL_CLOSED
+
+    SCORE -->|No: <50%| LOG_MONITOR
+    SCORE -->|Yes: >=50%| IPTABLES
+
+    FAIL_CLOSED -->|No: <5| LOG_WARN
+    FAIL_CLOSED -->|Yes: >=5 Attempts| IPTABLES
+
+    %% Post-Containment Parallel Branches
+    IPTABLES -->|Local Burst| ALERT_BURST
+    IPTABLES -->|Intel Match / Cache Hit| GEMINI
+    GEMINI --> ALERT_INTEL
+    IPTABLES -->|Async Parallel| TIMER
+    TIMER -->|After 60s| CLEANUP
+    CLEANUP --> ALERT_RECOVER
         </pre>
       </div>
     </section>
